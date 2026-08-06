@@ -32,7 +32,11 @@ DEFAULT_MODEL = "openai/gpt-oss-20b:free"
 
 
 def get_llm(model: str = DEFAULT_MODEL, temperature: float = 0.3, max_tokens: int = 1024) -> ChatOpenAI:
-    api_key = os.environ.get("OPENROUTER_API_KEY")
+    # .strip() guards against a stray trailing newline/whitespace ending up
+    # in the env var (e.g. from a copy-paste into a hosting dashboard) —
+    # that alone is enough to make httpx reject the Authorization header
+    # outright with a LocalProtocolError, before any network call happens.
+    api_key = (os.environ.get("OPENROUTER_API_KEY") or "").strip() or None
     if not api_key:
         raise RuntimeError(
             "OPENROUTER_API_KEY is not set. Add it to your .env file — "
