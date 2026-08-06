@@ -6,6 +6,7 @@ a job queue serving many concurrent requests.
 """
 
 import threading
+import traceback
 
 from src.api import storage
 from src.pipeline import build_profile
@@ -24,4 +25,9 @@ def _run(profile_id: str, **urls) -> None:
         )
         storage.set_status(profile_id, "done", profile=profile)
     except Exception as e:
+        # Print the full traceback so it actually shows up in server logs —
+        # without this, a hosting platform's log stream shows nothing at
+        # all for a failure here, since we only store str(e) for the API.
+        print(f"[profile_build:{profile_id}] failed:")
+        traceback.print_exc()
         storage.set_status(profile_id, "failed", error=str(e))
