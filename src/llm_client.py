@@ -45,4 +45,10 @@ def get_llm(model: str = DEFAULT_MODEL, temperature: float = 0.3, max_tokens: in
         base_url=OPENROUTER_BASE_URL,
         temperature=temperature,
         max_tokens=max_tokens,
+        # Cloud-to-cloud calls (e.g. Render -> OpenRouter) can hit transient
+        # connection blips that a local machine rarely sees. A longer
+        # timeout + automatic retries handles that without masking a real,
+        # persistent failure — it'll still raise after 3 attempts.
+        timeout=60,
+        max_retries=3,
     )
