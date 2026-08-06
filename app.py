@@ -10,12 +10,21 @@ Run the backend first:  uvicorn src.api.main:app --reload
 Then run this:           streamlit run app.py
 """
 
+import os
 import time
 
 import requests
 import streamlit as st
 
-API_BASE = "http://127.0.0.1:8123"
+# Locally this defaults to the FastAPI dev server. Once deployed, set
+# API_BASE — as a Streamlit Cloud "secret" or a plain env var, depending on
+# where this runs — to point at wherever the backend is actually hosted
+# (e.g. Render).
+try:
+    _secret_api_base = st.secrets.get("API_BASE")
+except Exception:
+    _secret_api_base = None
+API_BASE = _secret_api_base or os.environ.get("API_BASE", "http://127.0.0.1:8123")
 
 st.set_page_config(page_title="Startup Copilot", page_icon="🧭", layout="wide")
 
