@@ -25,9 +25,18 @@ def _run(profile_id: str, **urls) -> None:
         )
         storage.set_status(profile_id, "done", profile=profile)
     except Exception as e:
-        # Print the full traceback so it actually shows up in server logs —
-        # without this, a hosting platform's log stream shows nothing at
-        # all for a failure here, since we only store str(e) for the API.
+        # Print the full traceback so it actually shows up in server logs.
         print(f"[profile_build:{profile_id}] failed:")
         traceback.print_exc()
-        storage.set_status(profile_id, "failed", error=str(e))
+
+        # Also surface the *chained* root cause directly in the API's error
+        # field (e.g. openai.APIConnectionError wraps the real httpx-level
+        # error via `raise ... from err`) — reading it here is far easier
+        # than hunting through a hosting platform's log scrollback.
+        error_parts = [f"{type(e).__name__}: {e}"]
+        cause = e.__cause__
+        while cause is not None:
+            error_parts.append(f"caused by {type(cause).__name__}: {cause}")
+            cause = cause.__cause__
+
+        storage.set_status(profile_id, "failed", error=" | ".join(error_parts))
