@@ -16,6 +16,7 @@ from pydantic import BaseModel
 from src.api import storage
 from src.api.worker import start_profile_build
 from src.mentorship.graph import answer_question
+from src.mock_data import DEMO_PROFILE_ID, build_mock_profile
 
 app = FastAPI(title="Startup Copilot API")
 
@@ -52,6 +53,14 @@ def create_profile(req: CreateProfileRequest):
 @app.get("/profile/{profile_id}")
 def get_profile(profile_id: str):
     entry = storage.get_status(profile_id)
+
+    # The demo profile is generated data, not something that ships with the
+    # deployment (its source, mock_data.py, does) — build it on first request
+    # instead of requiring a manual step on whatever server this runs on.
+    if entry is None and profile_id == DEMO_PROFILE_ID:
+        storage.set_status(DEMO_PROFILE_ID, "done", profile=build_mock_profile())
+        entry = storage.get_status(profile_id)
+
     if entry is None:
         raise HTTPException(404, "Unknown profile_id")
     return {
