@@ -64,8 +64,18 @@ Startup: {profile.company_name or "Unknown"} — {profile.one_line_summary or "n
 
 Founder's question: "{state['question']}"
 
-Decide which mentor specialist(s) should answer this — technical (code/engineering),
-product (positioning/market fit), pitch (fundraising/narrative), growth (social/audience)."""
+Decide which mentor specialist(s) should answer this. Each specialist only sees
+one specific slice of data — route based on what data the question actually
+needs, not just keyword similarity to a specialist's name:
+
+- technical: code/engineering health — commits, contributors, CI, tests, tech stack
+- product: positioning, value proposition, target market, features, pricing
+- pitch: fundraising narrative, traction, revenue/MRR, funding ask, business model, team
+- growth: social media presence specifically — follower counts, posting cadence,
+  content themes. NOT general "business growth" or revenue growth — that's pitch.
+
+Example: "what's our MRR?" needs pitch data (traction/revenue), not growth data
+(social media). "How many contributors do we have?" needs technical data, not growth."""
 
     decision = structured_llm.invoke(prompt)
     return {"specialists_to_run": decision.specialists}
