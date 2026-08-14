@@ -36,30 +36,39 @@ mentor makes has to trace back to something a fetcher actually found.
 - **Ingestion:** `requests`, `BeautifulSoup`, `trafilatura`, Playwright (headless-browser fallback), `pypdf`
 - **AI orchestration:** LangGraph, LangChain, OpenRouter (provider-agnostic LLM access)
 - **Backend:** FastAPI — async profile building with live status polling, no job queue needed at this scale
-- **Frontend:** Streamlit
+- **Database:** Postgres (Neon), via SQLAlchemy + Alembic migrations
+- **Auth:** email + password, stateless JWT bearer tokens
+- **Frontend:** Next.js (App Router), talking to the backend through server-side route handlers that hold the session cookie
 
 ## Running it locally
+
+Backend:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+playwright install chromium
 
-cp .env.example .env   # then add your OPENROUTER_API_KEY
+cp .env.example .env   # add OPENROUTER_API_KEY, DATABASE_URL (a Neon Postgres connection string), JWT_SECRET
 
-# terminal 1
-uvicorn src.api.main:app --reload
+alembic upgrade head    # creates the users / startup_profiles tables
 
-# terminal 2
-streamlit run app.py
+uvicorn src.api.main:app --reload --port 8123
 ```
 
-Or skip the wait on your first run — generate a fully-populated mock
-profile and load it straight from the UI:
+Frontend:
 
 ```bash
-python -m src.mock_data
+cd web
+npm install
+cp .env.local.example .env.local   # points API_BASE_URL at the backend above
+
+npm run dev
 ```
+
+Then open http://localhost:3000, sign up, and either fill in the 4 links or click
+"Load the demo profile" to skip the wait and try the chat right away.
 
 ## Project structure
 
@@ -69,8 +78,10 @@ src/
   ingestion/             Phase 1 — the 4 fetchers, one file each
   synthesis/             Phase 2 — LangGraph graph: raw data -> StartupProfile
   mentorship/            Phase 3 — LangGraph graph: question -> grounded reply
-  api/                   Phase 4 — FastAPI backend
+  api/                   Phase 4 — FastAPI backend (auth, profiles, chat)
+  db.py, models.py        SQLAlchemy engine + User/StartupProfileRecord models
   pipeline.py            ties ingestion + synthesis together end-to-end
-app.py                   Phase 5 — Streamlit frontend
+alembic/                 database migrations
+web/                     Phase 5 — Next.js frontend
 docs/mentorship_spec.md  what "good mentorship" means, concretely
 ```
